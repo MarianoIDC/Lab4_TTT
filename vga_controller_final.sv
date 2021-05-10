@@ -11,14 +11,14 @@ module vga_controller_final(
    output logic [7:0] B );
 
 	
-	parameter int HD = 640;
+	parameter int HD = 640; //Horizontal Display
 	parameter int HFP = 16;
-	parameter int HSP = 96;
+	parameter int HSP = 96; //Horizontal Sync Time 0-96 hihg
 	parameter int HBP = 48;
 	
-	parameter int VD = 480;
+	parameter int VD = 480; //Vertical Display
 	parameter int VFP = 10;
-	parameter int VSP = 2;
+	parameter int VSP = 2; //vertical Sync Time
 	parameter int VBP = 33;
 	
 	
@@ -56,6 +56,7 @@ module vga_controller_final(
 	//assign Red = (counterX < 784 && counterX > 143 && counterY < 515 && counterY > 34) ? 8'b11111111:8'b00000000; 
 	//assign Green = (counterX < 784 && counterX > 143 && counterY < 515 && counterY > 34) ? 8'b11111111:8'b00000000; 
 	//assign Blue = (counterX < 784 && counterX > 143 && counterY < 515 && counterY > 34) ? 8'b11111111:8'b00000000; 
+	
 	// video_on
   always_ff @(posedge CLK_IN, negedge RST)
     if (~RST)
