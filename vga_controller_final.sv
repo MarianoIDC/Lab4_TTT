@@ -10,70 +10,89 @@ module vga_controller_final(
    output logic [7:0] G,
    output logic [7:0] B );
 
-	
+	//parametros horizontales
 	parameter int HD = 640; //Horizontal Display
-	parameter int HFP = 16;
+	parameter int HFP = 16;	//Horizontal Front Display
 	parameter int HSP = 96; //Horizontal Sync Time 0-96 hihg
-	parameter int HBP = 48;
-	
+	parameter int HBP = 48;	//Horizontal Back Display
+	//parametros verticales
 	parameter int VD = 480; //Vertical Display
-	parameter int VFP = 10;
-	parameter int VSP = 2; //vertical Sync Time
-	parameter int VBP = 33;
+	parameter int VFP = 10;	//Vertical Front Display
+	parameter int VSP = 2; 	//vertical Sync Time
+	parameter int VBP = 33;	//vertical back Display
 	
+	//outuputs
 	
-	logic de = 0;
-	
+	assign SYNK = 0;
+	assign CLK_OUT = CLK_IN;		
 		
 	logic [9:0]  counterX = 0;
-	logic [9:0]  counterY = 0;
-	
-	
-	always@(posedge CLK_IN) begin
-	
-		if (counterX < 799) begin
-			counterX <= counterX +1;	
-		end
-		else begin
-			counterX <= 0; 
-		end
-	end
+	logic [9:0]  counterY = 0;	
 
-
-	always@(posedge CLK_IN) begin
-		if (counterX == 799) begin
-			if (counterY < 525) 
-				counterY <= counterY +1;
-			else counterY <= 0; 
-		end
-	end
-	
-	assign o_hsync = (counterX < 96) ? 1'b1:1'b0;
-	assign o_vsync = (counterY < 2) ? 1'b1:1'b0;
-	
-	assign CLK_OUT = CLK_IN;
-	
-	//assign Red = (counterX < 784 && counterX > 143 && counterY < 515 && counterY > 34) ? 8'b11111111:8'b00000000; 
-	//assign Green = (counterX < 784 && counterX > 143 && counterY < 515 && counterY > 34) ? 8'b11111111:8'b00000000; 
-	//assign Blue = (counterX < 784 && counterX > 143 && counterY < 515 && counterY > 34) ? 8'b11111111:8'b00000000; 
-	
-	// video_on
+	//Contadore de Posicion
+		//Horizontal_position_counter    
+		always_ff @(posedge CLK_IN, negedge RST)
+		 if (~RST)
+			counterX <= 0;
+		 else if (CLK_IN)
+			if (counterX == (HD + HFP + HSP + HBP - 1))
+			  counterX <= 0;
+			else
+			  counterX <= counterX + 1;
+		 
+		//Vertical_position_counter
+		always_ff @(posedge CLK_IN, negedge RST)
+		 if (~RST)
+			counterY <= 0;
+		 else if (CLK_IN)
+			if (counterX == (HD + HFP + HSP + HBP - 1))
+			  if (counterY == (VD + VFP + VSP + VBP - 1))
+				 counterY <= 0;
+			  else
+				 counterY <= counterY + 1;
+//Sincronizacion Horizontal y Vertical
+	  // Sincronizacion Horizontal
+	  always_ff @(posedge CLK_IN, negedge RST)
+		 if (~RST)
+			begin 
+			  o_hsync <= 0;
+			end
+		 else if (CLK_IN)
+			begin
+			  if((counterX >= (HD + HFP)) && (counterX < HD + HFP + HSP))
+				 o_hsync <= 0;
+			  else
+				o_hsync <= 1;
+			end
+			
+		// Sincronizacion Vertical
+		always_ff @(posedge CLK_IN, negedge RST)
+		 if (~RST)
+			begin
+			  o_vsync <= 0;
+			end
+		 else if (CLK_IN)
+			begin
+			  if((counterY >= (VD + VFP)) && (counterY < VD + VFP + VSP))
+				 o_vsync <= 0;
+			  else
+				o_vsync <= 1;
+			end
+//Video en Pantalla
   always_ff @(posedge CLK_IN, negedge RST)
     if (~RST)
       begin
-        de    <= 0;
         BLANK <= 0;
       end
     else if (CLK_IN)
       begin
         if(counterX < HD && counterY < VD)
-          de <= 1;
-        else
-          de <= 0;
-        BLANK <= de; // delay one clock to align with pixel data
+			BLANK <= 1;
+        else 
+			BLANK <= 0; 
       end
     
-  // draw
+  // Dibujar
   always_ff @(posedge CLK_IN, negedge RST)
     if (~RST)
       begin
@@ -83,128 +102,41 @@ module vga_controller_final(
       end
     else if (CLK_IN)  
       begin 
-        
-        // Si [0][0] y 0
-        // Entonces dibujar en el primer cuadro una
-		  // Lineas l en la primer fila
-        if (counterX>105 && counterX<110 && counterY>30 && counterY<130)
+		//Dibujando la estructura principal
+		  // Lineas verticales
+        if (counterX>220 & counterX<225 & counterY>30 & counterY<450)
             begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
+              R <= 8'b11100101;
+              G <= 8'b10011100;
+              B <= 8'b00010100;
             end
-        else if(counterX>320 && counterX<325 && counterY>30 && counterY<130)
+        else if(counterX>400 && counterX<405 && counterY>30 && counterY<450)
             begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
+              R <= 8'b11100101;
+              G <= 8'b10011100;
+              B <= 8'b00010100;
             end
-        else if(counterX>535 && counterX<540 && counterY>30 && counterY<130)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-        
-        // Lineas l en la segunda fila
-        else if(counterX>105 && counterX<110 && counterY>192 && counterY<292)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-        else if(counterX>320 && counterX<325 && counterY>192 && counterY<292)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-        else if(counterX>535 && counterX<540 && counterY>192 && counterY<292)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-         
-        // Lineas l en la tercer fila
-        else if(counterX>105 && counterX<110 && counterY>349 && counterY<449)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-        else if(counterX>320 && counterX<325 && counterY>349 && counterY<449)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-        else if(counterX>535 && counterX<540 && counterY>349 && counterY<449)
-            begin
-              R <= 8'b11111111;
-              G <= 8'b00000000;
-              B <= 8'b00000000;
-            end
-        
-        // Linea - en la primer fila    
-        else if (counterX>30 && counterX<180 && counterY>78 && counterY<83)
+       
+        // Lineas Horizontales  
+        else if (counterX>30 && counterX<610 && counterY>150 && counterY<155)
               begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
+                R <= 8'b11100101;
+              G <= 8'b10011100;
+              B <= 8'b00010100;
               end
-        else if (counterX>245 && counterX<395 && counterY>78 && counterY<83)
+        else if (counterX>30 && counterX<610 && counterY>320 && counterY<325)
               begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
+                R <= 8'b11100101;
+              G <= 8'b10011100;
+              B <= 8'b00010100;
               end
-        else if (counterX>460 && counterX<610 && counterY>78 && counterY<83)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
-        
-        // Linea - en la segunda fila    
-        else if (counterX>30 && counterX<180 && counterY>240 && counterY<245)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
-        else if (counterX>245 && counterX<395 && counterY>240 && counterY<245)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
-        else if (counterX>460 && counterX<610 && counterY>240 && counterY<245)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
-        
-        // Linea - en la tercer fila    
-        else if (counterX>30 && counterX<180 && counterY>402 && counterY<407)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
-        else if (counterX>245 && counterX<395 && counterY>402 && counterY<407)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
-        else if (counterX>460 && counterX<610 && counterY>402 && counterY<407)
-              begin
-                R <= 8'b00000000;
-                G <= 8'b00000000;
-                B <= 8'b11111111;
-              end
+		
+			else begin
+				
+			R <= 8'b00000000;
+			G <= 8'b00000000;
+			B <= 8'b00000000;
+        end
 		end
 		
 
